@@ -1,5 +1,11 @@
 colors = ["Red", "Blue", "Green", "Yellow"]
-
+draw_amounts = {
+    "Draw Two": 2,
+    "Draw Four": 4,
+    "Wild Reverse Draw Four": 4,
+    "Wild Draw Six": 6,
+    "Wild Draw Ten": 10,
+}
 def print_card(card):
     print(card.type)
     if card.type == "Number Card":
@@ -31,13 +37,19 @@ class Engine():
         self.hands = [[], []]
         self.current = 0
         self.labels = list(labels)
-        self.turn = 0
+        self.plays = 0
         self.chosen_color = None
         self.skip = False
+        self.pending_draw = 0
+        self.penalty_turns = 0
+        self.roulette_turns = 0
+        self.ending = None
+        self.winner = None
         self.setup()
 
     def setup(self):
         self.create_deck()
+        self.total_cards = len(self.deck)
         self.shuffle(self.deck)
         for _ in range(7):
             self.deal_card_from_deck_to_hand(self.hands[0])
@@ -46,23 +58,55 @@ class Engine():
         self.pick_player_first_turn()    
 
     def summary(self):
-        return self.is_over()
+        summary = {
+            "winner": self.winner,
+            "ending": self.ending,
+            "plays": self.plays,
+            "penalty_turns": self.penalty_turns,
+            "roulette_turns": self.roulette_turns,
+            "total_turns": self.plays + self.roulette_turns + self.penalty_turns,
+        }
+        return summary
 
     def is_over(self):
         for i, hand in enumerate(self.hands):
             if len(hand) >= 25:
-                return self.labels[1 - i], "knocked out", self.turn
+                self.ending = "knocked out"
+                self.winner = self.labels[1 - i]
+                return True
             if len(hand) == 0:
-                return self.labels[i], "emptied", self.turn
+                self.ending = "emptied"
+                self.winner = self.labels[i]
+                return True
         return False
+
+    def list_of_stackable_cards(self, index):
+        stackable = []
+        top_card = self.discard_pile[-1]
+        top_number = draw_amounts[top_card.effect]
+        for card in self.hands[index]:
+            if card.effect in draw_amounts:
+                if draw_amounts[card.effect] >= top_number:
+                    stackable.append(card)
+        return stackable
+
+    def take_pending_draw(self):
+        self.penalty_turns += 1
+        for num in range(self.pending_draw):
+            self.deal_card_from_deck_to_hand(self.hands[self.current])
+        self.pending_draw = 0
+        self.next_players_turn()
+        return True
+
+    def count_cards(self):
+        deck_len = len(self.deck)
+        hand1_len = len(self.hands[0])
+        hand2_len = len(self.hands[1])
+        discard_len = len(self.discard_pile)
+        return deck_len + hand1_len + hand2_len + discard_len
 
     def get_current_hand(self):
         return self.current
-
-    def give_opponent(self, n, index):
-        for _ in range(n):
-            new_card = self.draw_card_from_deck()
-            self.hands[1 - index].append(new_card)
 
     def discard_all_color(self, color, hand):
         keep = []
@@ -75,9 +119,6 @@ class Engine():
 
     def play_card(self, card, index, wild=None, roulette=None):
         hand = self.hands[index]
-        if card not in hand:
-            print(card)
-            print(hand)
         hand.remove(card)
         self.discard_pile.append(card)
         if card.type == "Action Card" or card.type == "Wild Card":
@@ -86,27 +127,16 @@ class Engine():
             if effect == "Skip" or effect == "Reverse" or effect == "Skip Everyone":
                 self.skip = True
 
-            elif effect == "Draw Two":
-                self.give_opponent(2, index)
-
-            elif effect == "Draw Four":
-                self.give_opponent(4, index)
+            elif effect in draw_amounts:
+                amount = draw_amounts[effect]
+                self.pending_draw += amount
 
             elif effect == "Discard All":
                 color = card.color
                 self.discard_all_color(color, hand)
 
-            elif effect == "Wild Reverse Draw Four":
-                self.give_opponent(4, index)
-                self.skip = True
-
-            elif effect == "Wild Draw Six":
-                self.give_opponent(6, index)
-
-            elif effect == "Wild Draw Ten":
-                self.give_opponent(10, index)
-
             elif effect == "Wild Color Roulette":
+                self.roulette_turns += 1
                 drawn_cards = []
                 color_in_hand = False
                 while not color_in_hand:
@@ -121,11 +151,13 @@ class Engine():
             self.chosen_color = None
         if wild is not None:
             self.chosen_color = wild
-        self.turn += 1
+        if roulette is not None:
+            self.chosen_color = roulette
+        self.plays += 1
         if self.skip:
             self.skip = False
             return
-        if roulette == None:
+        if roulette is None:
             self.next_players_turn()
         
     def list_of_playable_cards_from_hand(self, index):
@@ -137,7 +169,7 @@ class Engine():
             new_card = self.draw_card_from_deck()
             if self.can_card_be_played(new_card):
                 playable.append(new_card)
-                self.hands[index].append(new_card)
+            self.hands[index].append(new_card)
         return playable
 
     def can_card_be_played(self, card):
@@ -181,13 +213,16 @@ class Engine():
     def draw_card_to_start_discard(self):
         card = self.draw_card_from_deck()
         self.discard_pile.append(card)
-        if card.type == "Action Card":
+        if card.type != "Number Card":
             self.draw_card_to_start_discard()
 
     def reset_deck_from_discard(self):
+        top = self.discard_pile.pop()
+        print(top)
         self.shuffle(self.discard_pile)
-        self.deck = self.discard_pile.copy()
-        self.discard_pile = [self.deck.pop(0)]
+        self.deck = self.discard_pile
+        self.discard_pile = [top]
+        print(self.discard_pile)
 
     def deal_card_from_deck_to_hand(self, hand):
         if not len(self.deck) > 0:

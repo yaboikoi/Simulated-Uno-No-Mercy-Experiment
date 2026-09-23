@@ -8,6 +8,10 @@ driver = drivers.Driver1()
 agent1 = uno_agents.EasyBot()
 agent2 = uno_agents.EasyBot()
 summary = driver.run_game(seed, agent1, agent2)
+summaries = driver.run_game_n(100, seed, agent1, agent2)
+print(summaries[0])
+print(summaries[1])
+print(summaries[2])
 print(summary)
 
 # DIFFERENT BRANCHES OF MAIN DEPENDING ON MODE 

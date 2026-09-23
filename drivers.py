@@ -13,7 +13,6 @@ class Driver1():
             summaries.append(summary)
         return summaries
 
-
     def run_game(self, seed, agent1, agent2):
         generator1 = random.Random(seed)
         game_seed = generator1.randrange(2**32)
@@ -34,8 +33,16 @@ class Driver1():
         while not engine.is_over():
             hand = engine.get_current_hand()
             chosen_agent = agents[hand]
-            options = engine.list_of_playable_cards_from_hand(hand)
-            chosen = chosen_agent.choose_card_from_list(options)
+
+            if engine.pending_draw > 0:
+                options = engine.list_of_stackable_cards(hand)
+                chosen = chosen_agent.choose_stack(options)
+                if chosen[0] == "penalty":
+                    engine.take_pending_draw()
+                    continue
+            else:
+                options = engine.list_of_playable_cards_from_hand(hand)
+                chosen = chosen_agent.choose_card_from_list(options)
 
             if len(chosen) == 1:
                 engine.play_card(chosen[0], hand)
@@ -46,8 +53,9 @@ class Driver1():
                     engine.play_card(chosen[0], hand, roulette=color)
                 else:
                     engine.play_card(chosen[0], hand, wild=chosen[1])
-
-        summary = engine.is_over()
+            if engine.count_cards() != engine.total_cards:
+                raise RuntimeError(f"Count of Cards != Total Cards | Turn: {engine.turn} Count: {engine.count_cards()} Target: {engine.total_cards}")
+        summary = engine.summary()
         return summary
         
 

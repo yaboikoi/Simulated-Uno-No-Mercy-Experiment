@@ -10,16 +10,24 @@ class EasyBot():
     def set_hand(self, hand):
         self.hand = hand
 
+    def choose_stack(self, cards):
+        options = cards + ["penalty"]
+        chosen = self.generator.choice(options)
+        if chosen != "penalty":
+            if chosen.type == "Wild Card":
+                return [chosen, self.pick_color()]
+        return [chosen]
+
     def choose_card_from_list(self, cards):
-        if not cards:
-            return None
-        for card in cards:
-            if card.type == "Wild Card":
-                if card.effect == "Wild Color Roulette":
-                    return [card, "opponent chooses color"]
+        if cards is None:
+            raise ValueError("choose_card_from_list got an empty list") 
+        card = self.generator.choice(cards)
+        if card.type == "Wild Card":
+            if card.effect == "Wild Color Roulette":
+                return [card, "opponent chooses color"]
+            else:
                 return [card, self.pick_color()]
-        choice = self.generator.choice(cards)
-        return [choice]
+        return [card]
 
     def pick_color(self):
         colors = ["Red", "Blue", "Yellow", "Green"]
