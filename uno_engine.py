@@ -6,6 +6,7 @@ draw_amounts = {
     "Wild Draw Six": 6,
     "Wild Draw Ten": 10,
 }
+
 def print_card(card):
     print(card.type)
     if card.type == "Number Card":
@@ -16,11 +17,6 @@ def print_card(card):
         print(card.effect)
     elif card.type == "Wild Card":
         print(card.effect)
-
-class Seat():
-    def __init__(self, hand, label):
-        self.hand = hand
-        self.label = label
 
 class Card():
     def __init__(self, type, color=None, number=None, effect=None):
@@ -96,7 +92,6 @@ class Engine():
             self.deal_card_from_deck_to_hand(self.hands[self.current])
         self.pending_draw = 0
         self.next_players_turn()
-        return True
 
     def count_cards(self):
         deck_len = len(self.deck)
@@ -218,11 +213,9 @@ class Engine():
 
     def reset_deck_from_discard(self):
         top = self.discard_pile.pop()
-        print(top)
         self.shuffle(self.discard_pile)
         self.deck = self.discard_pile
         self.discard_pile = [top]
-        print(self.discard_pile)
 
     def deal_card_from_deck_to_hand(self, hand):
         if not len(self.deck) > 0:

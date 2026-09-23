@@ -1,14 +1,10 @@
 class EasyBot():
     def __init__(self):
         self.generator = None
-        self.hand = None
 
     def set_gen(self, generator):
         self.generator = generator
         return self
-
-    def set_hand(self, hand):
-        self.hand = hand
 
     def choose_stack(self, cards):
         options = cards + ["penalty"]
@@ -19,7 +15,7 @@ class EasyBot():
         return [chosen]
 
     def choose_card_from_list(self, cards):
-        if cards is None:
+        if not cards:
             raise ValueError("choose_card_from_list got an empty list") 
         card = self.generator.choice(cards)
         if card.type == "Wild Card":

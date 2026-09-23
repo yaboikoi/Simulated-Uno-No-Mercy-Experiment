@@ -54,7 +54,7 @@ class Driver1():
                 else:
                     engine.play_card(chosen[0], hand, wild=chosen[1])
             if engine.count_cards() != engine.total_cards:
-                raise RuntimeError(f"Count of Cards != Total Cards | Turn: {engine.turn} Count: {engine.count_cards()} Target: {engine.total_cards}")
+                raise RuntimeError(f"Count of Cards != Total Cards | Turn: {engine.plays} Count: {engine.count_cards()} Target: {engine.total_cards}")
         summary = engine.summary()
         return summary
         
